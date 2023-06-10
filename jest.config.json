@@ -1,0 +1,33 @@
+{
+  "verbose": true,
+  "preset": "ts-jest",
+  "testEnvironment": "node",
+  "runner": "jest-runner",
+  "testRunner": "jest-circus/runner",
+  "moduleFileExtensions": [
+    "js",
+    "json",
+    "ts"
+  ],
+  "roots": [
+    "<rootDir>/src",
+    "<rootDir>/test"
+  ],
+  "testRegex": ".*(spec.ts$)",
+  "transform": {
+    "^.+\\.[tj]s$": [
+      "ts-jest",
+      {
+        "isolatedModules": true,
+        "diagnostics": false,
+        "tsconfig": "./tsconfig.json"
+      }
+    ]
+  },
+  "maxWorkers": "95%",
+  "workerIdleMemoryLimit": "300MB",
+  "collectCoverageFrom": [
+    "**/*.(t|j)s"
+  ],
+  "coverageDirectory": "../coverage"
+}
