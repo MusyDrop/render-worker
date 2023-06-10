@@ -4,13 +4,10 @@ import { AppService } from './app.service';
 import { ConfigModule } from '../config/config.module';
 import { LoggerModule } from '../logger/logger.module';
 import { S3Module } from '../s3/s3.module';
-import { DbModule } from '../db/db.module';
 import { MetadataMiddleware } from '../common/middlewares/metadata.middleware';
 import { SentryModule } from '../sentry/sentry.module';
-import { TemplatesModule } from '../templates/templates.module';
 import { KafkaModule } from '../kafka/kafka.module';
 import { JobsModule } from '../jobs/jobs.module';
-import { MainServiceModule } from '../main-service/main-service.module';
 import { AuthModule } from '../auth/auth.module';
 
 @Module({
@@ -18,12 +15,9 @@ import { AuthModule } from '../auth/auth.module';
     ConfigModule,
     LoggerModule.forRoot(),
     S3Module,
-    DbModule,
     SentryModule,
-    TemplatesModule,
     KafkaModule,
     JobsModule,
-    MainServiceModule,
     AuthModule
   ],
   controllers: [AppController],

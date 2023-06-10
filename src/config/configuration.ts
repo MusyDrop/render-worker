@@ -3,10 +3,6 @@ import { ServerConfig, serverConfigSchema } from './schemas/server-config';
 import { RedisConfig, redisConfigSchema } from './schemas/redis-config';
 import { MinioConfig, minioConfigSchema } from './schemas/minio-config';
 import { JoiAppConfig } from '../utils/joi/joiTypes';
-import {
-  PostgresConfig,
-  postgresConfigSchema
-} from './schemas/postgres-config';
 import { SentryConfig, sentryConfigSchema } from './schemas/sentry-config';
 import { KafkaConfig, kafkaConfigSchema } from './schemas/kafka-config';
 import {
@@ -19,7 +15,6 @@ export interface AppConfig {
   server: ServerConfig;
   redis: RedisConfig;
   minio: MinioConfig;
-  postgres: PostgresConfig;
   sentry: SentryConfig;
   kafka: KafkaConfig;
   microservices: MicroservicesConfig;
@@ -29,7 +24,6 @@ export const appSchema = (): JoiAppConfig<AppConfig> => ({
   server: serverConfigSchema(),
   redis: redisConfigSchema(),
   minio: minioConfigSchema(),
-  postgres: postgresConfigSchema(),
   sentry: sentryConfigSchema(),
   kafka: kafkaConfigSchema(),
   microservices: microservicesConfigSchema()

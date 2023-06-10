@@ -1,26 +1,60 @@
-import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
-import { ClientKafka } from '@nestjs/microservices';
+import { Injectable } from '@nestjs/common';
+import { Consumer, IHeaders, Kafka, KafkaConfig } from 'kafkajs';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
-import { AnyObject } from '../utils/utility-types';
 
-export const KAFKA_CLIENT_TOKEN = 'kafka-client-token';
+export type KafkaSimplifiedHeaders = Record<string, string>;
+export type KafkaEachMessageHandler<T> = (
+  message: T,
+  key?: string | null,
+  headers?: IHeaders | null
+) => Promise<void>;
 
 @Injectable()
-export class KafkaService implements OnModuleInit {
-  constructor(
-    @Inject(KAFKA_CLIENT_TOKEN) private readonly clientKafka: ClientKafka,
-    @InjectPinoLogger(KafkaService.name) private readonly logger: PinoLogger
-  ) {}
+export class KafkaService {
+  protected readonly client: Kafka;
 
-  public async emit<T extends AnyObject>(
-    topicName: string,
-    data: T
-  ): Promise<void> {
-    await this.clientKafka.emit(top, data);
+  constructor(
+    protected readonly options: KafkaConfig,
+    @InjectPinoLogger(KafkaService.name) private readonly logger: PinoLogger
+  ) {
+    this.client = new Kafka({
+      clientId: options.clientId,
+      brokers: options.brokers
+    });
   }
 
-  public async onModuleInit(): Promise<void> {
-    await this.clientKafka.connect();
-    this.logger.info('Connected');
+  public async on<T>(
+    topicName: string,
+    groupId: string,
+    handler: KafkaEachMessageHandler<T>
+  ): Promise<Consumer> {
+    const consumer = this.client?.consumer({
+      groupId: groupId
+    });
+
+    await consumer.connect();
+    await consumer.subscribe({
+      topics: [topicName]
+    });
+
+    await consumer.run({
+      eachMessage: async ({ message }) => {
+        if (!message.value) return;
+        const payload = JSON.parse(message.value.toString());
+        const key = message.key?.toString();
+
+        const simplifiedHeaders = message.headers as KafkaSimplifiedHeaders;
+        const parsedHeaders: Record<string, string> = {};
+        for (const headerKey in simplifiedHeaders) {
+          parsedHeaders[headerKey] = simplifiedHeaders[headerKey].toString();
+        }
+
+        await handler(payload, key, parsedHeaders);
+      }
+    });
+
+    this.logger.info('Initialised successfully');
+
+    return consumer;
   }
 }

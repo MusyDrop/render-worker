@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { MainServiceApiClient } from './main-service.api-client';
+import { RenderServiceApiClient } from './render-service.api-client';
 import { HttpModule } from '@nestjs/axios';
 import { ConfigModule } from '../config/config.module';
 import { ExtendedConfigService } from '../config/extended-config.service';
@@ -14,7 +14,7 @@ import { ExtendedConfigService } from '../config/extended-config.service';
       })
     })
   ],
-  providers: [MainServiceApiClient],
-  exports: [MainServiceApiClient]
+  providers: [RenderServiceApiClient],
+  exports: [RenderServiceApiClient]
 })
-export class MainServiceModule {}
+export class RenderServiceModule {}

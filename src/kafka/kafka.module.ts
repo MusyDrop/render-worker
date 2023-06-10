@@ -1,32 +1,29 @@
 import { Module } from '@nestjs/common';
-import { KAFKA_CLIENT_TOKEN, KafkaService } from './kafka.service';
-import { ClientsModule, KafkaOptions, Transport } from '@nestjs/microservices';
-import { ConfigModule } from '../config/config.module';
+import { KafkaService } from './kafka.service';
 import { ExtendedConfigService } from '../config/extended-config.service';
+import { ConfigModule } from '../config/config.module';
+import { PinoLogger } from 'nestjs-pino';
 
 @Module({
-  imports: [
-    ClientsModule.registerAsync({
-      clients: [
-        {
-          imports: [ConfigModule],
-          inject: [ExtendedConfigService],
-          name: KAFKA_CLIENT_TOKEN,
-          useFactory: (config: ExtendedConfigService): KafkaOptions => ({
-            transport: Transport.KAFKA,
-            options: {
-              client: {
-                clientId: 'render-service',
-                brokers: config.get('kafka.brokers')
-              },
-              producerOnlyMode: true
-            }
-          })
-        }
-      ]
-    })
+  imports: [ConfigModule],
+  providers: [
+    KafkaService,
+    {
+      inject: [ExtendedConfigService, PinoLogger],
+      provide: KafkaService,
+      useFactory: (
+        config: ExtendedConfigService,
+        logger: PinoLogger
+      ): KafkaService =>
+        new KafkaService(
+          {
+            clientId: config.get('kafka.clientId'),
+            brokers: config.get('kafka.brokers')
+          },
+          logger
+        )
+    }
   ],
-  providers: [KafkaService],
-  exports: [ClientsModule, KafkaService]
+  exports: [KafkaService]
 })
 export class KafkaModule {}

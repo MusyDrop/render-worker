@@ -12,7 +12,7 @@ services:
       - ZOOKEEPER_CLIENT_PORT=32181
       - ALLOW_ANONYMOUS_LOGIN=yes
     networks:
-      - render-service-network
+      - render-worker-network
 
   kafka:
     image: confluentinc/cp-kafka
@@ -32,7 +32,7 @@ services:
     depends_on:
       - zookeeper
     networks:
-      - render-service-network
+      - render-worker-network
 
   # http://localhost:8182/
   kafka-ui:
@@ -46,7 +46,7 @@ services:
     depends_on:
       - kafka
     networks:
-      - render-service-network
+      - render-worker-network
 
   render-postgres:
     image: postgres:15.3
@@ -59,7 +59,7 @@ services:
     volumes:
       - render-postgres-storage:/var/lib/postgresql/data
     networks:
-      - render-service-network
+      - render-worker-network
 
   main-postgres:
     image: postgres:15.3
@@ -72,13 +72,13 @@ services:
     volumes:
       - main-postgres-storage:/var/lib/postgresql/data
     networks:
-      - render-service-network
+      - render-worker-network
   redis:
     image: redis:7.0.11
     ports:
       - "6379:6379"
     networks:
-      - render-service-network
+      - render-worker-network
 
   minio:
     image: minio/minio
@@ -93,10 +93,10 @@ services:
       MINIO_ROOT_PASSWORD: password
     command: server --console-address ":9001" /data
     networks:
-      - render-service-network
+      - render-worker-network
 
 networks:
-  render-service-network:
+  render-worker-network:
 
 volumes:
   render-postgres-storage:
