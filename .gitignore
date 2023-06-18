@@ -35,3 +35,9 @@ lerna-debug.log*
 !.vscode/extensions.json
 
 .env
+documentation
+
+src/jobs/assets/*.js
+src/jobs/assets/*.d.ts
+src/jobs/assets/*.tsbuildinfo
+.history

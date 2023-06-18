@@ -5,4 +5,7 @@ export interface RenderJobPayload {
   archiveFileName: string;
   audioFileName: string;
   settings: AnyObject;
+  projectGuid: string;
+  compressedRms: number[];
+  audioDurationSecs: number;
 }

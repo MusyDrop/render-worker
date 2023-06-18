@@ -3,6 +3,7 @@ import { ExtendedConfigService } from '../config/extended-config.service';
 import { Client } from 'minio';
 import { generateUniqueId } from '../utils/unique-id-generator';
 import { Readable } from 'node:stream';
+import { AnyObject } from '../utils/utility-types';
 
 @Injectable()
 export class S3Service implements OnModuleInit {
@@ -41,7 +42,9 @@ export class S3Service implements OnModuleInit {
     try {
       return await this.client.getObject(bucketName, objectName);
     } catch (e) {
-      if (e.code === 'NoSuchKey') {
+      const anyError = e as AnyObject;
+
+      if (anyError.code === 'NoSuchKey') {
         throw new NotFoundException(
           'Unable to find object by the specified name'
         );

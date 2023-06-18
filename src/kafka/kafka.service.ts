@@ -38,7 +38,7 @@ export class KafkaService {
     });
 
     await consumer.run({
-      eachMessage: async ({ message }) => {
+      eachMessage: async ({ message, heartbeat }) => {
         if (!message.value) return;
         const payload = JSON.parse(message.value.toString());
         const key = message.key?.toString();
@@ -49,7 +49,15 @@ export class KafkaService {
           parsedHeaders[headerKey] = simplifiedHeaders[headerKey].toString();
         }
 
-        await handler(payload, key, parsedHeaders);
+        try {
+          await handler(payload, key, parsedHeaders);
+        } catch (e) {
+          this.logger.error(`eachMessage: faield, error: ${JSON.stringify(e)}`);
+        }
+        // const interval = setInterval(async () => {
+        //   await heartbeat();
+        // }, 3000);
+        // clearInterval(interval);
       }
     });
 

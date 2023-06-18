@@ -4,7 +4,6 @@ import { ValidationPipe } from '@nestjs/common';
 import { Logger } from 'nestjs-pino';
 import { ExtendedConfigService } from './config/extended-config.service';
 import cookieParser from 'cookie-parser';
-import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
