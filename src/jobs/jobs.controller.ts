@@ -6,6 +6,7 @@ import { Consumer } from 'kafkajs';
 import { ExtendedConfigService } from '../config/extended-config.service';
 import { S3Service } from '../s3/s3.service';
 import fs from 'node:fs/promises';
+import { createReadStream } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'path';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
@@ -16,9 +17,11 @@ import { RenderNecessities } from './interfaces/render-necessities.interface';
 import { render } from '@nexrender/core';
 import { decompress } from '../utils/compression';
 import { streamToBuffer } from '../utils/other-utils';
-import { createReadStream, existsSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { AnyObject } from '../utils/utility-types';
 import { promisify } from 'node:util';
+import { RenderServiceApiClient } from '../render-service/render-service.api-client';
+import { JobStatus } from '../render-service/job-status.enum';
 
 @Controller()
 export class JobsController
@@ -33,7 +36,8 @@ export class JobsController
     private readonly kafkaService: KafkaService,
     private readonly config: ExtendedConfigService,
     private readonly s3Service: S3Service,
-    @InjectPinoLogger(JobsController.name) private readonly logger: PinoLogger
+    @InjectPinoLogger(JobsController.name) private readonly logger: PinoLogger,
+    private readonly renderServiceApiClient: RenderServiceApiClient
   ) {}
 
   public async execute(
@@ -55,13 +59,24 @@ export class JobsController
       const uncompressedRms = await decompress(message.compressedRms);
       this.logger.info('execute: decompressed RMS');
 
-      await this.startRenderProcess({
+      const artifactPath = await this.startRenderProcess(message.jobGuid, {
         keyframes: uncompressedRms,
         audioDurationSecs: message.audioDurationSecs,
         audioFilePath,
         renderFolderPath,
         outputFolderPath: renderFolderPath,
         settings: message.settings
+      });
+
+      const artifactStream = createReadStream(artifactPath);
+
+      const artifactId = await this.s3Service.putObject(
+        this.config.get('minio.buckets.artifactsBucket'),
+        artifactStream
+      );
+
+      await this.renderServiceApiClient.updateJob(message.jobGuid, {
+        artifact: artifactId
       });
     } catch (e) {
       this.logger.error(`execute: failed, error: ${(e as AnyObject).message}`);
@@ -112,18 +127,19 @@ export class JobsController
   }
 
   private async startRenderProcess(
+    jobGuid: string,
     necessities: RenderNecessities
-  ): Promise<void> {
+  ): Promise<string> {
     this.logger.info(`startRenderProcess: started`);
 
-    const config = this.composeRenderSettings(necessities);
+    const config = this.composeRenderSettings(jobGuid, necessities);
 
-    const res = await render(config, {
+    await render(config, {
       debug: true,
       skipCleanup: true
     });
 
-    console.log(res);
+    return `${necessities.outputFolderPath}/render.mp4`;
   }
 
   public async onModuleInit(): Promise<any> {
@@ -145,7 +161,10 @@ export class JobsController
     }, 3000);
   }
 
-  public composeRenderSettings(necessities: RenderNecessities): AnyObject {
+  public composeRenderSettings(
+    jobGuid: string,
+    necessities: RenderNecessities
+  ): AnyObject {
     this.logger.info(`composeRenderSettings: started`);
     const mainScriptAssetPath = path.resolve(
       process.cwd(),
@@ -210,6 +229,23 @@ export class JobsController
             output: `${necessities.outputFolderPath}/render.mp4`
           }
         ]
+      },
+      onChange: async (job: AnyObject, state: string): Promise<void> => {
+        if (state === 'finished') {
+          await this.renderServiceApiClient.updateJob(jobGuid, {
+            status: JobStatus.SUCCEEDED
+          });
+        }
+
+        if (state === 'error') {
+          await this.renderServiceApiClient.updateJob(jobGuid, {
+            status: JobStatus.FAILED
+          });
+        }
+
+        await this.renderServiceApiClient.updateJob(jobGuid, {
+          status: JobStatus.IN_PROGRESS
+        });
       }
     };
   }
