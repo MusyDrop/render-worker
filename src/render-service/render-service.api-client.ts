@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { AxiosInstance } from 'axios';
 import { HttpService } from '@nestjs/axios';
+import { UpdateJobDto } from './dtos/update-job.dto';
 
 @Injectable()
 export class RenderServiceApiClient {
@@ -10,11 +11,9 @@ export class RenderServiceApiClient {
     this.axios = httpService.axiosRef;
   }
 
-  public async updateJob(guid: string): Promise<void> {
-    await this.axios.get<void>(`/system/jobs/${guid}`);
+  public async updateJob(guid: string, dto: UpdateJobDto): Promise<void> {
+    await this.axios.patch<void>(`/system/jobs/${guid}`, dto);
   }
 
-  async onModuleInit(): Promise<void> {
-    await this.updateJob('asdasd');
-  }
+  async onModuleInit(): Promise<void> {}
 }
