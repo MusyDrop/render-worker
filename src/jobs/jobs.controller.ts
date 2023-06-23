@@ -79,7 +79,8 @@ export class JobsController
       );
 
       await this.renderServiceApiClient.updateJob(message.jobGuid, {
-        artifact: artifactId
+        artifact: artifactId,
+        status: JobStatus.SUCCEEDED
       });
     } catch (e) {
       this.logger.error(`execute: failed, error: ${(e as AnyObject).message}`);
@@ -237,13 +238,7 @@ export class JobsController
         ]
       },
       onChange: async (job: AnyObject, state: string): Promise<void> => {
-        if (state === 'finished') {
-          this.logger.info(`Current job: ${jobGuid} has finished execution`);
-          await this.renderServiceApiClient.updateJob(jobGuid, {
-            status: JobStatus.SUCCEEDED
-          });
-        }
-
+        this.logger.info(`Status changed: ${state}`);
         if (state === 'error') {
           this.logger.error(`Current job: ${jobGuid} has FAILED`);
           await this.renderServiceApiClient.updateJob(jobGuid, {
