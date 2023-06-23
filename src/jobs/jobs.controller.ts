@@ -6,7 +6,7 @@ import { Consumer } from 'kafkajs';
 import { ExtendedConfigService } from '../config/extended-config.service';
 import { S3Service } from '../s3/s3.service';
 import fs from 'node:fs/promises';
-import { createReadStream } from 'node:fs';
+import { createReadStream, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'path';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
@@ -17,7 +17,6 @@ import { RenderNecessities } from './interfaces/render-necessities.interface';
 import { render } from '@nexrender/core';
 import { decompress } from '../utils/compression';
 import { streamToBuffer } from '../utils/other-utils';
-import { existsSync } from 'node:fs';
 import { AnyObject } from '../utils/utility-types';
 import { promisify } from 'node:util';
 import { RenderServiceApiClient } from '../render-service/render-service.api-client';
@@ -51,6 +50,10 @@ export class JobsController
         `execute: renderId: ${renderId}, received message ${message.jobGuid}`
       );
 
+      await this.renderServiceApiClient.updateJob(message.jobGuid, {
+        status: JobStatus.IN_PROGRESS
+      });
+
       const { renderFolderPath, audioFilePath } = await this.downloadAssets(
         message,
         renderId
@@ -80,6 +83,9 @@ export class JobsController
       });
     } catch (e) {
       this.logger.error(`execute: failed, error: ${(e as AnyObject).message}`);
+      await this.renderServiceApiClient.updateJob(message.jobGuid, {
+        status: JobStatus.FAILED
+      });
     } finally {
       this.consumer.resume([{ topic: this.topicName }]);
     }
@@ -232,20 +238,18 @@ export class JobsController
       },
       onChange: async (job: AnyObject, state: string): Promise<void> => {
         if (state === 'finished') {
+          this.logger.info(`Current job: ${jobGuid} has finished execution`);
           await this.renderServiceApiClient.updateJob(jobGuid, {
             status: JobStatus.SUCCEEDED
           });
         }
 
         if (state === 'error') {
+          this.logger.error(`Current job: ${jobGuid} has FAILED`);
           await this.renderServiceApiClient.updateJob(jobGuid, {
             status: JobStatus.FAILED
           });
         }
-
-        await this.renderServiceApiClient.updateJob(jobGuid, {
-          status: JobStatus.IN_PROGRESS
-        });
       }
     };
   }

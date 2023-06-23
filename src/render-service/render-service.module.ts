@@ -10,7 +10,9 @@ import { ExtendedConfigService } from '../config/extended-config.service';
       imports: [ConfigModule],
       inject: [ExtendedConfigService],
       useFactory: (config: ExtendedConfigService) => ({
-        baseURL: `${config.get('microservices.mainService.baseUrl')}/api/main`
+        baseURL: `${config.get(
+          'microservices.renderService.baseUrl'
+        )}/api/render`
       })
     })
   ],
