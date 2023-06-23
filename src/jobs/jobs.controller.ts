@@ -75,7 +75,8 @@ export class JobsController
 
       const artifactId = await this.s3Service.putObject(
         this.config.get('minio.buckets.artifactsBucket'),
-        artifactStream
+        artifactStream,
+        `${generateUniqueId()}.mp4`
       );
 
       await this.renderServiceApiClient.updateJob(message.jobGuid, {
